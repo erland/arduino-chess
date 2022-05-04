@@ -25,6 +25,8 @@ int muxSquareMapping[64] = {19,18,17,16,15,11, 7, 3,
 
 int defaultValue[64] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 char markers[64] = {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY};
+int placementDefaultValue[6] = {0,0,0,0,0,0};
+char placementMarker[6] = {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY};
 Adafruit_8x16matrix matrix = Adafruit_8x16matrix();
 
 noDelay ledBlinkRate(1000);
@@ -44,6 +46,12 @@ void setup() {
     }
     pinMode(muxSignalPins[muxNo], INPUT);
   }
+  pinMode(A4, INPUT);
+  pinMode(A5, INPUT);
+  pinMode(A6, INPUT);
+  pinMode(A7, INPUT);
+  pinMode(A8, INPUT);
+  pinMode(A9, INPUT);
 
   Serial.println("Initializing with: ");
   for ( int y=0;y<8;y++) {
@@ -56,6 +64,19 @@ void setup() {
     }
     Serial.println("");
   }
+  placementDefaultValue[0] = analogRead(A4);
+  Serial.print("A4=");Serial.println(placementDefaultValue[0]);
+  placementDefaultValue[1] = analogRead(A5);
+  Serial.print("A5=");Serial.println(placementDefaultValue[1]);
+  placementDefaultValue[2] = analogRead(A6);
+  Serial.print("A6=");Serial.println(placementDefaultValue[2]);
+  placementDefaultValue[3] = analogRead(A7);
+  Serial.print("A7=");Serial.println(placementDefaultValue[3]);
+  placementDefaultValue[4] = analogRead(A8);
+  Serial.print("A8=");Serial.println(placementDefaultValue[4]);
+  placementDefaultValue[5] = analogRead(A9);
+  Serial.print("A9=");Serial.println(placementDefaultValue[5]);
+  
   Serial.println("");
   Serial.println("Ready to play");
   for ( int y=0;y<8;y++) {
@@ -63,18 +84,34 @@ void setup() {
       drawBlinkPixel(x,y,50);
     }
   }
+  drawBlinkPixel(8,0,50);
+  drawBlinkPixel(8,1,50);
+  drawBlinkPixel(8,2,50);
+  drawBlinkPixel(8,5,50);
+  drawBlinkPixel(8,6,50);
+  drawBlinkPixel(8,7,50);
   printBoard();
 }
 
 int lastPlaced = -1;
 int lastRemoved = -1;
+int lastPlacedPlacementMarker = -1;
+int lastRemovedPlacementMarker = -1;
 
 void loop() {
   if(boardScanRate.update()) {
     int oldLastPlaced = lastPlaced;
     int oldLastRemoved = lastRemoved;
+    int oldLastPlacedPlacementMarker = lastPlacedPlacementMarker;
+    int oldLastRemovedPlacementMarker = lastRemovedPlacementMarker;
     scanBoard();
-    if(lastPlaced != oldLastPlaced || lastRemoved != oldLastRemoved) {
+    scanPlacementMarker(0, A4);
+    scanPlacementMarker(1, A5);
+    scanPlacementMarker(2, A6);
+    scanPlacementMarker(3, A7);
+    scanPlacementMarker(4, A8);
+    scanPlacementMarker(5, A9);
+    if(lastPlaced != oldLastPlaced || lastRemoved != oldLastRemoved || lastPlacedPlacementMarker != oldLastPlacedPlacementMarker || lastRemovedPlacementMarker != oldLastRemovedPlacementMarker) {
       printBoard();
     }
     /*
@@ -120,6 +157,32 @@ void scanBoard() {
   }
 }
 
+char scanPlacementMarker(int index, int pin) {
+  int offset = placementDefaultValue[index];
+  int current = analogRead(pin);
+  if(current<offset-20) {
+    refreshLastPlacedPlacementMarker(index, placementMarker[index], WHITE);
+    placementMarker[index] = WHITE;
+  }else if(current>offset+20) {
+    refreshLastPlacedPlacementMarker(index, placementMarker[index], BLACK);
+    placementMarker[index] = BLACK;
+  }else {
+    refreshLastPlacedPlacementMarker(index, placementMarker[index], EMPTY);
+    placementMarker[index] = EMPTY;
+  }
+}
+
+void refreshLastPlacedPlacementMarker(int index, char oldValue, char newValue) {
+  if(oldValue != newValue) {
+    if(newValue != EMPTY) {
+      lastPlacedPlacementMarker = index;
+    }
+    if(oldValue != EMPTY) {
+      lastRemovedPlacementMarker = index;
+    }
+  }
+}
+
 void printBoard() {
   matrix.clear(); 
   Serial.println("+--------+");
@@ -141,9 +204,25 @@ void printBoard() {
   }
   Serial.println("+--------+");
   Serial.println();
+  for(int i=0;i<6;i++) {
+    printPlacementMarker(i);
+  }
+  Serial.println();
   matrix.writeDisplay();
 }
 
+void printPlacementMarker(int index) {
+  if(placementMarker[index] != EMPTY) {
+    Serial.print(placementMarker[index]);
+    if(index<3) {
+      drawPixel(8, index, 1);
+    }else {
+      drawPixel(8, 2+index, 1);
+    }
+  }else {
+    Serial.print("-");
+  }
+}
 
 bool isBoardEmpty() {
   for(int i=0;i<64;i++) {
