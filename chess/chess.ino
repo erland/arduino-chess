@@ -1,7 +1,13 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
+#include <Adafruit_ST7735.h>
 #include "Adafruit_LEDBackpack.h"
 #include <NoDelay.h>
+
+#define TFT_RST   47
+#define TFT_CS    48
+#define TFT_DC    46
+Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 
 int muxControlPins[4][4] = {
   {30,31,32,33},
@@ -36,6 +42,13 @@ noDelay debugRate(500);
 
 void setup() {
   Serial.begin(115200);
+  tft.initR(INITR_BLACKTAB);     // initialize a ST7735S chip, black tab
+  tft.fillScreen(ST7735_BLACK);  // fill screen with black color
+  tft.setRotation(1);
+  tft.setTextColor(ST7735_WHITE, ST7735_BLACK);
+  tft.setTextSize(4);
+  tft.setCursor(7, 20);
+  tft.print("Schack");
   matrix.begin(0x70); 
   matrix.setBrightness(1);
 
