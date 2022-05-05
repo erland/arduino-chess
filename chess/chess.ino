@@ -9,6 +9,10 @@
 #define TFT_DC    46
 Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 
+#define ROTARY_CLK 4
+#define ROTARY_DT 3
+#define ROTARY_SW 2
+
 int muxControlPins[4][4] = {
   {30,31,32,33},
   {34,35,36,37},
@@ -40,15 +44,15 @@ noDelay boardScanRate(100);
 noDelay resetTimer(5000);
 noDelay debugRate(500);
 
+int rotary_value = 0;
+
 void setup() {
   Serial.begin(115200);
+  pinMode(ROTARY_CLK, INPUT_PULLUP);
+  pinMode(ROTARY_DT, INPUT_PULLUP);
   tft.initR(INITR_BLACKTAB);     // initialize a ST7735S chip, black tab
   tft.fillScreen(ST7735_BLACK);  // fill screen with black color
   tft.setRotation(1);
-  tft.setTextColor(ST7735_WHITE, ST7735_BLACK);
-  tft.setTextSize(4);
-  tft.setCursor(7, 20);
-  tft.print("Schack");
   matrix.begin(0x70); 
   matrix.setBrightness(1);
 
@@ -104,6 +108,7 @@ void setup() {
   drawBlinkPixel(8,6,50);
   drawBlinkPixel(8,7,50);
   printBoard();
+  refreshDisplay();
 }
 
 int lastPlaced = -1;
@@ -112,6 +117,11 @@ int lastPlacedPlacementMarker = -1;
 int lastRemovedPlacementMarker = -1;
 
 void loop() {
+  int rotary_offset = read_rotary();
+  if(rotary_offset!=0) {
+    rotary_value = rotary_value + rotary_offset;
+    refreshDisplay();
+  }
   if(boardScanRate.update()) {
     int oldLastPlaced = lastPlaced;
     int oldLastRemoved = lastRemoved;
@@ -126,6 +136,7 @@ void loop() {
     scanPlacementMarker(5, A9);
     if(lastPlaced != oldLastPlaced || lastRemoved != oldLastRemoved || lastPlacedPlacementMarker != oldLastPlacedPlacementMarker || lastRemovedPlacementMarker != oldLastRemovedPlacementMarker) {
       printBoard();
+      refreshDisplay();
     }
     /*
     if(debugRate.update()) {
@@ -144,6 +155,22 @@ void loop() {
   }
 }
 
+void refreshDisplay() {
+  int cell_size = 12;
+  tft.fillScreen(ST7735_BLACK);  // fill screen with black color
+  for( int x=0;x<9;x++) {
+    for(int y=0;y<9;y++) {
+      tft.drawLine(10,10+y*cell_size,10+8*cell_size,10+y*cell_size, ST7735_WHITE);
+    }
+    tft.drawLine(10+x*cell_size,10,10+x*cell_size,10+8*cell_size, ST7735_WHITE);
+  }
+  tft.setTextColor(ST7735_WHITE, ST7735_BLACK);
+  tft.setTextSize(1);
+  tft.setCursor(10+8*cell_size+10, 20);
+  tft.print("Schack");
+  tft.setCursor(10+8*cell_size+10, 40);
+  tft.print(rotary_value);
+}
 
 void drawBlinkPixel(int x, int y, int rate) {
   drawPixel(x,y,1);
@@ -338,4 +365,27 @@ int readMux(int channel) {
   //Serial.print("Reading=");
   //Serial.println(val);
   return val;
+}
+
+static uint8_t prevNextCode = 0;
+static uint16_t store=0;
+// A vald CW or  CCW move returns 1, invalid returns 0.
+int8_t read_rotary() {
+  static int8_t rot_enc_table[] = {0,1,1,0,1,0,0,1,1,0,0,1,0,1,1,0};
+
+  prevNextCode <<= 2;
+  if (digitalRead(ROTARY_DT)) prevNextCode |= 0x02;
+  if (digitalRead(ROTARY_CLK)) prevNextCode |= 0x01;
+  prevNextCode &= 0x0f;
+
+   // If valid then store as 16 bit data.
+   if  (rot_enc_table[prevNextCode] ) {
+      store <<= 4;
+      store |= prevNextCode;
+      //if (store==0xd42b) return 1;
+      //if (store==0xe817) return -1;
+      if ((store&0xff)==0x2b) return -1;
+      if ((store&0xff)==0x17) return 1;
+   }
+   return 0;
 }
