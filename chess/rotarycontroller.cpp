@@ -6,6 +6,11 @@ RotaryController::RotaryController(int clkPin, int dtPin, int swPin) {
   this->swPin = swPin;
   prevNextCode = 0;
   store=0;
+  listener = NULL;
+}
+
+void RotaryController::setListener(RotaryControllerListener* listener) {
+  this->listener = listener;
 }
 
 void RotaryController::init() {
@@ -18,6 +23,9 @@ void RotaryController::refresh() {
   if(offset!=0) {
     value = value + offset;
     Serial.print(value);
+    if(listener != NULL) {
+      listener->rotaryControllerChangedRotation(value, offset);
+    }
   }
 }
 

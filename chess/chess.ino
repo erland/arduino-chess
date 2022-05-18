@@ -8,6 +8,7 @@
 #include "chessdisplay.h"
 #include "chesspieceselector.h"
 #include "rotarycontroller.h"
+#include "chesscontroller.h"
 
 #define TFT_RST   47
 #define TFT_CS    48
@@ -38,10 +39,11 @@ noDelay boardScanRate(100);
 
 
 SensorMatrix sensorMatrix(25, &muxControlPins, &muxSignalPins, &muxSquareMapping);
-ChessBoard chessBoard(&sensorMatrix, &ledMatrix);
-ChessDisplay chessDisplay(&tft, 12);
-ChessPieceSelector chessPieceSelector(25, &chessBoard, A4, A5, A6, A7, A8, A9);
 RotaryController rotaryController(4, 3, 2);
+ChessBoard chessBoard;
+ChessDisplay chessDisplay(&tft, 12);
+ChessPieceSelector chessPieceSelector(25, A4, A5, A6, A7, A8, A9);
+ChessController chessController(&rotaryController, &sensorMatrix, &chessPieceSelector, &chessBoard, &chessDisplay, &ledMatrix);
 
 long lastChanged = 0;
 void setup() {
@@ -56,6 +58,7 @@ void setup() {
   chessPieceSelector.init();
   chessDisplay.init();
   sensorMatrix.init();
+  chessController.init();
   
   Serial.println("");
   Serial.println("Ready to play");
