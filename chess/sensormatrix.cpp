@@ -135,7 +135,7 @@ int SensorMatrix::readMux(int channel) {
     digitalWrite(controlPins[i], muxChannelSettings[muxChannel][i]);
   }
   //Serial.println("");
-  //delay(1);
+  delay(1);
   int val = analogRead((*muxSignalPins)[muxNo]);
   //Serial.print("Reading=");
   //Serial.println(val);
