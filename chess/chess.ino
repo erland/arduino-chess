@@ -81,6 +81,9 @@ void loop() {
   rotaryController.refresh();
   if(boardScanRate.update()) {
     sensorMatrix.refresh();
+    if(chessBoard.isStartPosition()) {
+      chessBoard.setStartPosition();
+    }
     long changed = chessBoard.getLastChanged();
     if(lastChanged != changed) {
       lastChanged = changed;

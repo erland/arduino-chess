@@ -10,6 +10,8 @@ class ChessBoard {
     ChessBoard();
     char getPiece(int x, int y);
     void setPiece(int x, int y, char piece);
+    void setStartPosition();
+    bool isStartPosition();
     long getLastChanged();
     const char* getBoardArray();
     char* getBoardFENNotation();
