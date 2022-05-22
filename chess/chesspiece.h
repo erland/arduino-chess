@@ -20,6 +20,7 @@
 class ChessPiece {
   public:
     static bool isWhite(char piece);
+    static bool isBlack(char piece);
     static bool isKing(char piece);
     static bool isQueen(char piece);
     static bool isBishop(char piece);

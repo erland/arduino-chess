@@ -17,6 +17,8 @@ class ChessController : public RotaryControllerListener, public SensorMatrixList
     SensorMatrix* sensorMatrix;
     Adafruit_8x16matrix *ledMatrix;
     char currentlyMoved;
+    int currentlyMovedPos;
+    int strikePos;
     void enableLed(int x, int y);
     void activateCurrentlyPlacedLed(int index);
     void refreshLedMatrix();

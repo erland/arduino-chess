@@ -1,4 +1,5 @@
 #include "chesscontroller.h"
+#include "chessrules.h"
 #include "chesspiece.h"
 
 ChessController::ChessController(RotaryController* rotaryController, SensorMatrix* sensorMatrix, ChessPieceSelector* chessPieceSelector, ChessBoard* chessBoard, ChessDisplay* chessDisplay, Adafruit_8x16matrix *ledMatrix) {
@@ -12,6 +13,8 @@ ChessController::ChessController(RotaryController* rotaryController, SensorMatri
   this->chessDisplay = chessDisplay;
   this->ledMatrix = ledMatrix;
   currentlyMoved = EMPTY;
+  currentlyMovedPos = -1;
+  strikePos = -1;
 }
 
 void ChessController::init() {
@@ -47,13 +50,18 @@ void ChessController::sensorMatrixChanged(int x, int y, char oldValue, char newV
         Serial.println("Piece lifted");
         // Piece lifted
         currentlyMoved = previousPiece;
+        currentlyMovedPos = y*8+x;
+        strikePos=-1;
       }else {
         if((oldValue==SENSOR_STATE_WHITE && ChessPiece::isWhite(currentlyMoved)) || (oldValue==SENSOR_STATE_BLACK && !ChessPiece::isWhite(currentlyMoved))) {
           Serial.println("Another piece lifted, switching currently moved");
           currentlyMoved = previousPiece;
+          currentlyMovedPos = y*8+x;
+          strikePos=-1;
         }else {
-          Serial.println("Piece of other coller lifted, this is a strike");
+          Serial.println("Piece of other color lifted, this is a strike");
           // Ignore, this is likely a strike
+          strikePos=y*8+x;
         }
       }
       chessBoard->setPiece(x, y, EMPTY);
@@ -67,6 +75,8 @@ void ChessController::sensorMatrixChanged(int x, int y, char oldValue, char newV
         Serial.print("Placed: ");Serial.println(currentlyMoved);
         chessBoard->setPiece(x, y, currentlyMoved);
         currentlyMoved = EMPTY;
+        currentlyMovedPos = -1;
+        strikePos=-1;
       }else if(newValue == SENSOR_STATE_WHITE) {
         chessBoard->setPiece(x, y, WHITE_UNKNOWN);
         Serial.print("Placed white unknown");
@@ -87,23 +97,37 @@ void ChessController::enableLed(int x, int y) {
 
 void ChessController::refreshLedMatrix() {
   ledMatrix->clear(); 
-  Serial.println("+--------+");
-  for ( int y=0;y<8;y++) {
-    Serial.print("|");
-    for (int x=0;x<8;x++) {
-      char m = chessBoard->getPiece(x, y);
-      if(m != EMPTY) {
-        enableLed(x,y);
-        Serial.print(m);
-      }else {
-        Serial.print("_");
+  if(currentlyMovedPos<0 && strikePos<0) {
+    Serial.println("+--------+");
+    for ( int y=0;y<8;y++) {
+      Serial.print("|");
+      for (int x=0;x<8;x++) {
+        char m = chessBoard->getPiece(x, y);
+        if(m != EMPTY) {
+          enableLed(x,y);
+          Serial.print(m);
+        }else {
+          Serial.print("_");
+        }
+      }
+      Serial.println("|");
+    }
+    Serial.println("+--------+");
+    Serial.println();
+    Serial.println(currentlyMoved);
+  }else if(strikePos>=0) {
+    enableLed(strikePos%8,strikePos/8);
+  }else {
+    for(int y=0;y<8;y++) {
+      for(int x=0;x<8;x++) {
+        if(y != currentlyMovedPos/8 || x!= currentlyMovedPos%8) {
+          if(ChessRules::isValidMove(chessBoard, currentlyMoved, currentlyMovedPos%8, currentlyMovedPos/8, x, y)) {
+            enableLed(x, y);
+          }
+        }
       }
     }
-    Serial.println("|");
   }
-  Serial.println("+--------+");
-  Serial.println();
-  Serial.println(currentlyMoved);
   if(ChessPiece::isPawn(currentlyMoved)) {
     activateCurrentlyPlacedLed(0);
   }else if(ChessPiece::isRook(currentlyMoved)) {
@@ -131,5 +155,7 @@ void ChessController::activateCurrentlyPlacedLed(int index) {
 
 void ChessController::chessPieceSelectorPieceSelected(char piece) {
   currentlyMoved = piece;
+  currentlyMovedPos = -1;
+  strikePos=-1;
   refreshLedMatrix();
 }

@@ -7,6 +7,13 @@ bool ChessPiece::isWhite(char piece) {
   return false;
 }
 
+bool ChessPiece::isBlack(char piece) {
+  if(piece == BLACK_PAWN || piece == BLACK_ROOK || piece == BLACK_KNIGHT || piece == BLACK_BISHOP || piece == BLACK_QUEEN || piece == BLACK_KING || piece == BLACK_UNKNOWN) {
+    return true;
+  }
+  return false;
+}
+
 bool ChessPiece::isPawn(char piece) {
   return piece == WHITE_PAWN || piece == BLACK_PAWN;
 }

@@ -1,8 +1,9 @@
 #ifndef CHESSBOARD_H
 #define CHESSBOARD_H
 
+#include "chessrules.h"
 
-class ChessBoard {
+class ChessBoard : public ChessBoardInterface {
   private: 
     char pieces[64];
     long lastChanged;
