@@ -14,6 +14,7 @@ class ChessRules {
     static bool isValidKnightMove(ChessBoardInterface* chessBoard, char piece, int fromX, int fromY, int toX, int toY);
     static bool isValidRookMove(ChessBoardInterface* chessBoard, char piece, int fromX, int fromY, int toX, int toY);
     static bool isValidPawnMove(ChessBoardInterface* chessBoard, char piece, int fromX, int fromY, int toX, int toY);
+    static bool isCheck(ChessBoardInterface* chessBoard, char king, int kingX, int kingY);
   public:
     static bool isValidMove(ChessBoardInterface* chessBoard, char piece, int fromX, int fromY, int toX, int toY);
     
